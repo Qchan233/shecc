@@ -587,6 +587,7 @@ void hashmap_free(hashmap_t *map)
 /* options */
 
 bool dump_ir = false;
+bool dump_token = false;
 bool hard_mul_div = false;
 
 /* Find the type by the given name.

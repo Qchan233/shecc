@@ -925,7 +925,11 @@ bool lex_accept_internal(token_t token, bool aliasing)
  */
 bool lex_accept(token_t token)
 {
-    return lex_accept_internal(token, 1);
+    bool res = lex_accept_internal(token, 1);
+    if (dump_token && res) {
+        printf("Accepting %s\n", token_names[token]);
+    }
+    return res;
 }
 
 /* Peeks next token and copy token's literal to value if token types are
@@ -951,6 +955,8 @@ void lex_ident_internal(token_t token, char *value, bool aliasing)
         error("Unexpected token");
     strcpy(value, token_str);
     next_token = lex_token_impl(aliasing);
+    if (dump_token)
+        printf("Getting ident %s\n", value);
 }
 
 /* Strictly match next token with given token type and copy token's literal to
@@ -975,4 +981,6 @@ void lex_expect_internal(token_t token, bool aliasing)
 void lex_expect(token_t token)
 {
     lex_expect_internal(token, true);
+    if (dump_token)
+        printf("Expecting %s\n", token_names[token]);
 }

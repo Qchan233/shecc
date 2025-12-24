@@ -214,6 +214,92 @@ typedef enum {
     T_cppd_pragma
 } token_t;
 
+
+const char * token_names[] = {
+    "T_start", /* FIXME: Unused, intended for lexer state machine init */
+    "T_numeric",
+    "T_identifier",
+    "T_comma",  /* , */
+    "T_string", /* null-terminated string */
+    "T_char",
+    "T_open_bracket",  /* ( */
+    "T_close_bracket", /* ) */
+    "T_open_curly",    /* { */
+    "T_close_curly",   /* } */
+    "T_open_square",   /* [ */
+    "T_close_square",  /* ] */
+    "T_asterisk",      /* '*' */
+    "T_divide",        /* / */
+    "T_mod",           /* % */
+    "T_bit_or",        /* | */
+    "T_bit_xor",       /* ^ */
+    "T_bit_not",       /* ~ */
+    "T_log_and",       /* && */
+    "T_log_or",        /* || */
+    "T_log_not",       /* ! */
+    "T_lt",            /* < */
+    "T_gt",            /* > */
+    "T_le",            /* <= */
+    "T_ge",            /* >= */
+    "T_lshift",        /* << */
+    "T_rshift",        /* >> */
+    "T_dot",           /* . */
+    "T_arrow",         /* -> */
+    "T_plus",          /* + */
+    "T_minus",         /* - */
+    "T_minuseq",       /* -= */
+    "T_pluseq",        /* += */
+    "T_asteriskeq",    /* *= */
+    "T_divideeq",      /* /= */
+    "T_modeq",         /* %= */
+    "T_lshifteq",      /* <<= */
+    "T_rshifteq",      /* >>= */
+    "T_xoreq",         /* ^= */
+    "T_oreq",          /* |= */
+    "T_andeq",         /* &= */
+    "T_eq",            /* == */
+    "T_noteq",         /* != */
+    "T_assign",        /* = */
+    "T_increment",     /* ++ */
+    "T_decrement",     /* -- */
+    "T_question",      /* ? */
+    "T_colon",         /* : */
+    "T_semicolon",     /* ; */
+    "T_eof",           /* end-of-file (EOF) */
+    "T_ampersand",     /* & */
+    "T_return",
+    "T_if",
+    "T_else",
+    "T_while",
+    "T_for",
+    "T_do",
+    "T_typedef",
+    "T_enum",
+    "T_struct",
+    "T_union",
+    "T_sizeof",
+    "T_elipsis", /* ... */
+    "T_switch",
+    "T_case",
+    "T_break",
+    "T_default",
+    "T_continue",
+    "T_goto",
+    "T_const", /* const qualifier */
+    /* C pre-processor directives */
+    "T_cppd_include",
+    "T_cppd_define",
+    "T_cppd_undef",
+    "T_cppd_error",
+    "T_cppd_if",
+    "T_cppd_elif",
+    "T_cppd_else",
+    "T_cppd_endif",
+    "T_cppd_ifdef",
+    "T_cppd_ifndef",
+    "T_cppd_pragma"
+};
+
 /* Source location tracking for better error reporting */
 typedef struct {
     int line;
