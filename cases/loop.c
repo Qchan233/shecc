@@ -3,7 +3,7 @@ int main() {
     int n = 0;
     while (n < 100) {
         a = a + n;
-        n = n + 1; 
+        n = n + 1;
     }
     return a;
 }

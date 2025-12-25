@@ -59,6 +59,8 @@ int main(int argc, char *argv[])
             dump_token = true;
         else if (!strcmp(argv[i], "--debug-parser"))
             debug_parser = true;
+        else if (!strcmp(argv[i], "--debug-opt"))
+            debug_optimization = true;
         else if (!strcmp(argv[i], "+m"))
             hard_mul_div = true;
         else if (!strcmp(argv[i], "--no-libc"))
@@ -111,6 +113,8 @@ int main(int argc, char *argv[])
     /* SSA-based optimization */
     optimize();
 
+    if (debug_optimization)
+        dump_insn();
     /* Compact arenas after SSA optimization to free temporary SSA structures */
     compact_all_arenas();
 

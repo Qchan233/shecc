@@ -15,6 +15,9 @@
  */
 
 /* Simple constant propagation within basic blocks */
+#include "defs.h"
+#include "globals.c"
+
 bool simple_sccp(func_t *func)
 {
     if (!func || !func->bbs)
@@ -40,6 +43,7 @@ bool simple_sccp(func_t *func)
                     insn->opcode = OP_load_constant;
                     insn->rs1 = NULL;
                     changed = true;
+                    debug("SCCP", insn);
                 }
                 break;
 
@@ -72,6 +76,7 @@ bool simple_sccp(func_t *func)
                     insn->rs1 = NULL;
                     insn->sz = 0;
                     changed = true;
+                    debug("SCCP", insn);
                 }
                 break;
 
@@ -106,6 +111,7 @@ bool simple_sccp(func_t *func)
                     insn->rs1 = NULL;
                     insn->sz = 0;
                     changed = true;
+                    debug("SCCP", insn);
                 }
                 break;
 
@@ -164,6 +170,7 @@ bool simple_sccp(func_t *func)
                     insn->rs1 = NULL;
                     insn->rs2 = NULL;
                     changed = true;
+                    debug("SCCP", insn);
                 }
                 break;
 
@@ -191,6 +198,7 @@ bool simple_sccp(func_t *func)
 
                 last->rs1 = NULL;
                 changed = true;
+                debug("SCCP", last);
             }
         }
     }
@@ -255,6 +263,7 @@ bool optimize_constant_casts(func_t *func)
                 next_insn->sz = 0;
 
                 changed = true;
+                debug("Cast", insn);
             }
         }
     }

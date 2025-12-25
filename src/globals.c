@@ -589,6 +589,7 @@ void hashmap_free(hashmap_t *map)
 bool dump_ir = false;
 bool dump_token = false;
 bool debug_parser = false;
+bool debug_optimization = false;
 bool hard_mul_div = false;
 
 /* Find the type by the given name.
@@ -1694,6 +1695,15 @@ void dump_single_insn(insn_t *insn, basic_block_t *bb)
     printf("\n");
 }
 
+void debug(char* msg, insn_t *insn)
+{
+    if (debug_optimization) {
+        printf("[%s]:", msg);
+        print_indent(1);
+        dump_single_insn(insn, insn->belong_to);
+    }
+}
+
 void dump_bb_insn(func_t *func, basic_block_t *bb, bool *at_func_start)
 {
     if (!bb)
@@ -1723,8 +1733,6 @@ void dump_bb_insn_by_dom(func_t *func, basic_block_t *bb, bool *at_func_start)
 
 void dump_insn(void)
 {
-    printf("==<START OF INSN DUMP>==\n");
-
     for (func_t *func = FUNC_LIST.head; func; func = func->next) {
         /* Skip function declarations without bodies */
         if (!func->bbs)
@@ -1772,6 +1780,4 @@ void dump_insn(void)
 
         printf("}\n");
     }
-
-    printf("==<END OF INSN DUMP>==\n");
 }

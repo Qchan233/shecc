@@ -1693,12 +1693,19 @@ bool eval_const_unary(insn_t *insn)
 
 bool const_folding(insn_t *insn)
 {
-    if (mark_const(insn))
+    if (mark_const(insn)){
+        debug("MARK CONST", insn);
         return true;
-    if (eval_const_arithmetic(insn))
+    }
+
+    if (eval_const_arithmetic(insn)){
+        debug("EVAL CONST", insn);
         return true;
-    if (eval_const_unary(insn))
+    }
+    if (eval_const_unary(insn)) {
+        debug("EVAL CONST", insn);
         return true;
+    }
     return false;
 }
 
