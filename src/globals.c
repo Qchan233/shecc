@@ -588,6 +588,7 @@ void hashmap_free(hashmap_t *map)
 
 bool dump_ir = false;
 bool dump_token = false;
+bool debug_parser = false;
 bool hard_mul_div = false;
 
 /* Find the type by the given name.
@@ -1087,6 +1088,8 @@ void add_symbol(basic_block_t *bb, var_t *var)
     }
 }
 
+
+void dump_single_insn(insn_t *insn, basic_block_t *bb);
 void add_insn(block_t *block,
               basic_block_t *bb,
               opcode_t op,
@@ -1134,6 +1137,9 @@ void add_insn(block_t *block,
 
     n->prev = bb->insn_list.tail;
     bb->insn_list.tail = n;
+    if (debug_parser) {
+        dump_single_insn(n, bb);
+    }
 }
 
 strbuf_t *strbuf_create(int init_capacity)
@@ -1468,11 +1474,230 @@ void print_indent(int indent)
         printf("\t");
 }
 
+void dump_single_insn(insn_t *insn, basic_block_t *bb)
+{
+    var_t *rd = insn->rd;
+    var_t *rs1 = insn->rs1;
+    var_t *rs2 = insn->rs2;
+
+    switch (insn->opcode) {
+    case OP_unwound_phi:
+        /* Ignored */
+        return;
+    case OP_allocat:
+        print_indent(1);
+        printf("allocat %s", rd->type->type_name);
+
+        for (int i = 0; i < rd->ptr_level; i++)
+            printf("*");
+
+        printf(" %%%s", rd->var_name);
+
+        if (rd->array_size > 0)
+            printf("[%d]", rd->array_size);
+
+        break;
+    case OP_load_constant:
+        print_indent(1);
+        printf("const %%%s, %d", rd->var_name, rd->init_val);
+        break;
+    case OP_load_data_address:
+        print_indent(1);
+        /* offset from .data section */
+        printf("%%%s = .data (%d)", rd->var_name, rd->init_val);
+        break;
+    case OP_load_rodata_address:
+        print_indent(1);
+        /* offset from .rodata section */
+        printf("%%%s = .rodata (%d)", rd->var_name, rd->init_val);
+        break;
+    case OP_address_of:
+        print_indent(1);
+        printf("%%%s = &(%%%s)", rd->var_name, rs1->var_name);
+        break;
+    case OP_assign:
+        print_indent(1);
+        printf("%%%s = %%%s", rd->var_name, rs1->var_name);
+        break;
+    case OP_branch:
+        print_indent(1);
+        char *bb_then_name = bb->then_ ? bb->then_->bb_label_name : "<unknown>";
+        char *bb_else_name = bb->else_ ? bb->else_->bb_label_name : "<unknown>";
+        printf("br %%%s, %s, %s", rs1->var_name, bb_then_name,
+               bb_else_name);
+        break;
+    case OP_jump:
+        print_indent(1);
+        char *bb_next_name = bb->next ? bb->next->bb_label_name : "<unknown>";
+        printf("jmp %s", bb_next_name);
+        break;
+    case OP_label:
+        print_indent(0);
+        printf("%s:", insn->str);
+        break;
+    case OP_push:
+        print_indent(1);
+        printf("push %%%s", rs1->var_name);
+        break;
+    case OP_call:
+        print_indent(1);
+        printf("call @%s", insn->str);
+        break;
+    case OP_func_ret:
+        print_indent(1);
+        printf("retval %%%s", rd->var_name);
+        break;
+    case OP_return:
+        print_indent(1);
+        if (rs1)
+            printf("ret %%%s", rs1->var_name);
+        else
+            printf("ret");
+        break;
+    case OP_read:
+        print_indent(1);
+        printf("%%%s = (%%%s), %d", rd->var_name, rs1->var_name, insn->sz);
+        break;
+    case OP_write:
+        print_indent(1);
+        if (rs1->is_func)
+            printf("(%%%s) = @%s", rs1->var_name, rs2->var_name);
+        else
+            printf("(%%%s) = %%%s, %d", rs1->var_name, rs2->var_name,
+                   insn->sz);
+        break;
+    case OP_indirect:
+        print_indent(1);
+        printf("indirect call @(%%%s)", rs1->var_name);
+        break;
+    case OP_negate:
+        print_indent(1);
+        printf("neg %%%s, %%%s", rd->var_name, rs1->var_name);
+        break;
+    case OP_add:
+        print_indent(1);
+        printf("%%%s = add %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_sub:
+        print_indent(1);
+        printf("%%%s = sub %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_mul:
+        print_indent(1);
+        printf("%%%s = mul %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_div:
+        print_indent(1);
+        printf("%%%s = div %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_mod:
+        print_indent(1);
+        printf("%%%s = mod %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_eq:
+        print_indent(1);
+        printf("%%%s = eq %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_neq:
+        print_indent(1);
+        printf("%%%s = neq %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_gt:
+        print_indent(1);
+        printf("%%%s = gt %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_lt:
+        print_indent(1);
+        printf("%%%s = lt %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_geq:
+        print_indent(1);
+        printf("%%%s = geq %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_leq:
+        print_indent(1);
+        printf("%%%s = leq %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_bit_and:
+        print_indent(1);
+        printf("%%%s = and %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_bit_or:
+        print_indent(1);
+        printf("%%%s = or %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_bit_not:
+        print_indent(1);
+        printf("%%%s = not %%%s", rd->var_name, rs1->var_name);
+        break;
+    case OP_bit_xor:
+        print_indent(1);
+        printf("%%%s = xor %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_log_and:
+        print_indent(1);
+        printf("%%%s = and %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_log_or:
+        print_indent(1);
+        printf("%%%s = or %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_log_not:
+        print_indent(1);
+        printf("%%%s = not %%%s", rd->var_name, rs1->var_name);
+        break;
+    case OP_rshift:
+        print_indent(1);
+        printf("%%%s = rshift %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_lshift:
+        print_indent(1);
+        printf("%%%s = lshift %%%s, %%%s", rd->var_name, rs1->var_name,
+               rs2->var_name);
+        break;
+    case OP_trunc:
+        print_indent(1);
+        printf("%%%s = trunc %%%s, %d", rd->var_name, rs1->var_name,
+               insn->sz);
+        break;
+    case OP_sign_ext:
+        print_indent(1);
+        printf("%%%s = sign_ext %%%s, %d", rd->var_name, rs1->var_name,
+               insn->sz);
+        break;
+    case OP_cast:
+        print_indent(1);
+        printf("%%%s = cast %%%s", rd->var_name, rs1->var_name);
+        break;
+    default:
+        printf("<Unsupported opcode: %d>", insn->opcode);
+        break;
+    }
+
+    printf("\n");
+}
+
 void dump_bb_insn(func_t *func, basic_block_t *bb, bool *at_func_start)
 {
     if (!bb)
         return;
-    var_t *rd, *rs1, *rs2;
 
     if (bb != func->bbs && bb->insn_list.head) {
         if (!at_func_start[0])
@@ -1482,219 +1707,7 @@ void dump_bb_insn(func_t *func, basic_block_t *bb, bool *at_func_start)
     }
 
     for (insn_t *insn = bb->insn_list.head; insn; insn = insn->next) {
-        rd = insn->rd;
-        rs1 = insn->rs1;
-        rs2 = insn->rs2;
-
-        switch (insn->opcode) {
-        case OP_unwound_phi:
-            /* Ignored */
-            continue;
-        case OP_allocat:
-            print_indent(1);
-            printf("allocat %s", rd->type->type_name);
-
-            for (int i = 0; i < rd->ptr_level; i++)
-                printf("*");
-
-            printf(" %%%s", rd->var_name);
-
-            if (rd->array_size > 0)
-                printf("[%d]", rd->array_size);
-
-            break;
-        case OP_load_constant:
-            print_indent(1);
-            printf("const %%%s, %d", rd->var_name, rd->init_val);
-            break;
-        case OP_load_data_address:
-            print_indent(1);
-            /* offset from .data section */
-            printf("%%%s = .data (%d)", rd->var_name, rd->init_val);
-            break;
-        case OP_load_rodata_address:
-            print_indent(1);
-            /* offset from .rodata section */
-            printf("%%%s = .rodata (%d)", rd->var_name, rd->init_val);
-            break;
-        case OP_address_of:
-            print_indent(1);
-            printf("%%%s = &(%%%s)", rd->var_name, rs1->var_name);
-            break;
-        case OP_assign:
-            print_indent(1);
-            printf("%%%s = %%%s", rd->var_name, rs1->var_name);
-            break;
-        case OP_branch:
-            print_indent(1);
-            printf("br %%%s, %s, %s", rs1->var_name, bb->then_->bb_label_name,
-                   bb->else_->bb_label_name);
-            break;
-        case OP_jump:
-            print_indent(1);
-            printf("jmp %s", bb->next->bb_label_name);
-            break;
-        case OP_label:
-            print_indent(0);
-            printf("%s:", insn->str);
-            break;
-        case OP_push:
-            print_indent(1);
-            printf("push %%%s", rs1->var_name);
-            break;
-        case OP_call:
-            print_indent(1);
-            printf("call @%s", insn->str);
-            break;
-        case OP_func_ret:
-            print_indent(1);
-            printf("retval %%%s", rd->var_name);
-            break;
-        case OP_return:
-            print_indent(1);
-            if (rs1)
-                printf("ret %%%s", rs1->var_name);
-            else
-                printf("ret");
-            break;
-        case OP_read:
-            print_indent(1);
-            printf("%%%s = (%%%s), %d", rd->var_name, rs1->var_name, insn->sz);
-            break;
-        case OP_write:
-            print_indent(1);
-            if (rs1->is_func)
-                printf("(%%%s) = @%s", rs1->var_name, rs2->var_name);
-            else
-                printf("(%%%s) = %%%s, %d", rs1->var_name, rs2->var_name,
-                       insn->sz);
-            break;
-        case OP_indirect:
-            print_indent(1);
-            printf("indirect call @(%%%s)", rs1->var_name);
-            break;
-        case OP_negate:
-            print_indent(1);
-            printf("neg %%%s, %%%s", rd->var_name, rs1->var_name);
-            break;
-        case OP_add:
-            print_indent(1);
-            printf("%%%s = add %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_sub:
-            print_indent(1);
-            printf("%%%s = sub %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_mul:
-            print_indent(1);
-            printf("%%%s = mul %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_div:
-            print_indent(1);
-            printf("%%%s = div %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_mod:
-            print_indent(1);
-            printf("%%%s = mod %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_eq:
-            print_indent(1);
-            printf("%%%s = eq %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_neq:
-            print_indent(1);
-            printf("%%%s = neq %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_gt:
-            print_indent(1);
-            printf("%%%s = gt %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_lt:
-            print_indent(1);
-            printf("%%%s = lt %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_geq:
-            print_indent(1);
-            printf("%%%s = geq %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_leq:
-            print_indent(1);
-            printf("%%%s = leq %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_bit_and:
-            print_indent(1);
-            printf("%%%s = and %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_bit_or:
-            print_indent(1);
-            printf("%%%s = or %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_bit_not:
-            print_indent(1);
-            printf("%%%s = not %%%s", rd->var_name, rs1->var_name);
-            break;
-        case OP_bit_xor:
-            print_indent(1);
-            printf("%%%s = xor %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_log_and:
-            print_indent(1);
-            printf("%%%s = and %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_log_or:
-            print_indent(1);
-            printf("%%%s = or %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_log_not:
-            print_indent(1);
-            printf("%%%s = not %%%s", rd->var_name, rs1->var_name);
-            break;
-        case OP_rshift:
-            print_indent(1);
-            printf("%%%s = rshift %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_lshift:
-            print_indent(1);
-            printf("%%%s = lshift %%%s, %%%s", rd->var_name, rs1->var_name,
-                   rs2->var_name);
-            break;
-        case OP_trunc:
-            print_indent(1);
-            printf("%%%s = trunc %%%s, %d", rd->var_name, rs1->var_name,
-                   insn->sz);
-            break;
-        case OP_sign_ext:
-            print_indent(1);
-            printf("%%%s = sign_ext %%%s, %d", rd->var_name, rs1->var_name,
-                   insn->sz);
-            break;
-        case OP_cast:
-            print_indent(1);
-            printf("%%%s = cast %%%s", rd->var_name, rs1->var_name);
-            break;
-        default:
-            printf("<Unsupported opcode: %d>", insn->opcode);
-            break;
-        }
-
-        printf("\n");
+        dump_single_insn(insn, bb);
     }
 }
 

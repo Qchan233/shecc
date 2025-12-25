@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
             dump_ir = true;
         else if (!strcmp(argv[i], "--dump-token"))
             dump_token = true;
+        else if (!strcmp(argv[i], "--debug-parser"))
+            debug_parser = true;
         else if (!strcmp(argv[i], "+m"))
             hard_mul_div = true;
         else if (!strcmp(argv[i], "--no-libc"))
